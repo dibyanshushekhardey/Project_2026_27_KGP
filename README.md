@@ -21,3 +21,8 @@ Run the following for executing the pksd_experiment_power.py file.
 ```bash
 !python pksd_experiment_power.py
 ```
+
+Run the following for executing the pksd_experiment_power_weights.py file.
+```bash
+!python pksd_experiment_power_weights.py
+```
