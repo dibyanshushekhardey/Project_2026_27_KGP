@@ -1,6 +1,8 @@
 #@title Generating the samples function
 import torch
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 def sample_gmm(n, means, sigmas, weights, device):
     means = torch.tensor(means,dtype=torch.float32, device=device)
     sigmas = torch.tensor(sigmas, dtype=torch.float32,device=device)

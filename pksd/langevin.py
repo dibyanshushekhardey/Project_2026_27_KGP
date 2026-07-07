@@ -2,6 +2,7 @@
 import torch
 from torch.distributions import Normal
 #@title Langevin file functions
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 def sqrtm(A, eps=1e-12):
     """
