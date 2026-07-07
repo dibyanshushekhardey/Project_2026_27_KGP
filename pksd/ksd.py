@@ -123,7 +123,7 @@ class KSDTest:
     #x = sample_gmm(n=n, means=means, sigmas=sigmas, weights=weights, device=self.device)
     scale = median_heuristic(x)
     scale = torch.clamp(scale, min=1e-3)
-    ksd, U = ksd_test.compute_ksd(x, scale)
+    ksd, U = self.compute_ksd(x, scale)
     boot_stats = torch.stack([self.bootstrap_stat(U) for _ in range(num_boot)])
     pvalue = (boot_stats >= ksd).float().mean().item()
     return pvalue
