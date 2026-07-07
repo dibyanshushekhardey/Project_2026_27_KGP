@@ -90,4 +90,8 @@ plt.xlabel(r'$\Delta$')
 plt.ylabel("Rejection Rate")
 plt.legend()
 plt.grid(False)
+
+# Save the figure
+plt.savefig("rejection_rates.png", dpi=300, bbox_inches="tight")
+
 plt.show()
