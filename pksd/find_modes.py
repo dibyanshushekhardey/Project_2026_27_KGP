@@ -5,8 +5,12 @@ from torch.distributions import Normal
 from torch.distributions import Categorical
 from tqdm import trange
 import pandas as pd
+import numpy as np
+from torchmin.bfgs import _minimize_bfgs
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+#@title find modes file functions
 
 #@title find modes file functions
 
@@ -50,23 +54,16 @@ def merge_modes(inv_hessians, end_pts, threshold, log_prob, threshold_ignore=1e-
 
     return mode_list, inv_hessians_list
 
-import numpy as np
-from scipy.optimize import minimize
-
-
-def run_bfgs(start_pts,log_prob_fn, grad_log=None,verbose=False,max_iterations=100):
+def run_bfgs(start_pts, log_prob_fn, grad_log=None,verbose=False, max_iterations=100):
     device = start_pts.device
     positions = []
     inv_hessians = []
     converged = []
-
     for start in start_pts:
-
-        x0 = start.detach().cpu().numpy()
+        x0 = start.detach().clone()
         def objective(x):
-            x_tensor = torch.tensor(x,dtype=start.dtype, device=device).unsqueeze(0)
-            return -log_prob_fn(x_tensor).item()
-
+            x_tensor = x.to(dtype=start.dtype, device=device).unsqueeze(0)
+            return -log_prob_fn(x_tensor).squeeze()
         if grad_log is None:
             def gradient(x):
               x_tensor = torch.tensor(x,dtype=start.dtype,device=device,requires_grad=True,)
@@ -78,24 +75,10 @@ def run_bfgs(start_pts,log_prob_fn, grad_log=None,verbose=False,max_iterations=1
             def gradient(x):
                 x_tensor = torch.tensor(x,dtype=start.dtype,device=device,).unsqueeze(0)
                 return (-grad_log(x_tensor)).squeeze(0).cpu().numpy()
-
-        result = minimize(objective,x0,jac=gradient,method="BFGS",options={"maxiter": max_iterations},)
-
-        positions.append(
-            torch.tensor(
-                result.x,
-                dtype=start.dtype,
-                device=device,
-            )
-        )
-
-        inv_hessians.append(
-            torch.tensor(
-                np.atleast_2d(result.hess_inv),
-                dtype=start.dtype,
-                device=device,
-            )
-        )
+        
+        result = _minimize_bfgs(fun=objective, x0=x0,max_iter=max_iterations,)
+        positions.append(result.x.detach().to(dtype=start.dtype, device=device))
+        inv_hessians.append(result.hess_inv.detach().to(dtype=start.dtype, device=device))
 
         converged.append(result.success)
 
@@ -107,7 +90,7 @@ def run_bfgs(start_pts,log_prob_fn, grad_log=None,verbose=False,max_iterations=1
     return {
         "position": torch.stack(positions),
         "inverse_hessian_estimate": torch.stack(inv_hessians),
-        "converged": torch.tensor(converged),
+        "converged": torch.tensor(converged, device=device),
     }
 
 def find_modes(start_pts,log_prob_fn,threshold,grad_log=None,threshold_ignore=1e-8,max_iterations=50,):
@@ -127,8 +110,11 @@ def find_modes(start_pts,log_prob_fn,threshold,grad_log=None,threshold_ignore=1e
         threshold,
         log_prob_fn,
         threshold_ignore=threshold_ignore,
-    )
-    
+      )
+    # print("Number of modes:", len(mode_list))
+    # print("Modes:")
+    # for m in mode_list:
+    #     print(m.cpu().numpy())  
     return mode_list, inv_hess_list
 
 def pairwise_directions(modes, return_index=False, ordered=True):
