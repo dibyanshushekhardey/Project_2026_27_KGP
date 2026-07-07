@@ -1,6 +1,10 @@
-
 import torch
+import math
+import matplotlib.pyplot as plt
 from torch.distributions import Normal
+from torch.distributions import Categorical
+from tqdm import trange
+import pandas as pd
 #@title Langevin file functions
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 

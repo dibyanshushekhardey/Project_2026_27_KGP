@@ -1,6 +1,11 @@
 #@title Generating the samples function
 import torch
-
+import math
+import matplotlib.pyplot as plt
+from torch.distributions import Normal
+from torch.distributions import Categorical
+from tqdm import trange
+import pandas as pd
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 def sample_gmm(n, means, sigmas, weights, device):
