@@ -1,0 +1,121 @@
+import torch
+import math
+import matplotlib.pyplot as plt
+from torch.distributions import Normal
+from torch.distributions import Categorical
+from tqdm import trange
+import pandas as pd
+import numpy as np
+from torchmin.bfgs import _minimize_bfgs
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+from pksd.ksd import KSDTest, PKSD, OSPKSD, SPKSD
+from pksd.functions import sample_gmm
+from pksd.functions import median_heuristic
+
+#@title PKSD ROC Curves
+n = 100
+num_boot = 100
+n_trials = 100
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+jump_ls = torch.tensor([0.5, 1.0, 2.0, 3.0],device=device)
+T = 50
+
+sigma_list = [0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+results = {}
+plt.figure(figsize=(6, 6))
+summary_results = []
+roc_results = []
+trial_results = []
+for sigma in sigma_list:
+  p_values_null = []
+  p_values_alt = []
+  pksd = PKSD(means=[-6, 6],sigmas=[sigma, sigma],weights=[0.5, 0.5],jump_ls=jump_ls,T=T,device=device,)
+  for trial in range(n_trials):
+    # Null
+    train_null = sample_gmm(n=n, means=[-6, 6], sigmas=[sigma, sigma],weights=[0.5, 0.5],device=device)
+    best_jump_null = pksd.find_best_jump(train_null)
+    test_null = sample_gmm( n=n,means=[-6, 6], sigmas=[sigma, sigma],weights=[0.5, 0.5], device=device)
+    x_null = pksd.perturb_samples(test_null, best_jump_null)
+    scale0 = median_heuristic(x_null)
+    ksd0, U0 = pksd.compute_ksd(x_null, scale0)
+    boot_stats_0 = torch.stack([pksd.bootstrap_stat(U0) for _ in range(num_boot)])
+    p0 = (boot_stats_0 >= ksd0).float().mean().item()
+
+    # Alt
+    #pksd = PKSD(means=[0, 6],sigmas=[sigma, sigma],weights=[0.5, 0.5],jump_ls=jump_ls,T=T,device=device,)
+    #train_alt = sample_gmm(n=n,means=[0],sigmas=[sigma],weights=[1.0],device=device)
+    #best_jump_alt = pksd.find_best_jump(train_alt)
+    test_alt = sample_gmm( n=n,means=[6],sigmas=[sigma],weights=[1.0],device=device)
+    x_alt = pksd.perturb_samples(test_alt, best_jump_null)
+    scale1 = median_heuristic(x_alt)
+    ksd1, U1 = pksd.compute_ksd(x_alt, scale1)
+    boot_stats_1 = torch.stack([pksd.bootstrap_stat(U1) for _ in range(num_boot)])
+    p1 = (boot_stats_1 >= ksd1).float().mean().item()
+
+    p_values_null.append(p0)
+    p_values_alt.append(p1)
+    #print("="*50)
+
+  p_null = np.array(p_values_null)
+  p_alt = np.array(p_values_alt)
+  thresholds = np.linspace(0, 1, 100)
+  fpr = [np.mean(p_null < t) for t in thresholds]
+  tpr = [np.mean(p_alt < t) for t in thresholds]
+  auc_value = np.trapz(tpr, fpr)
+  results= {
+      'fpr': fpr,
+      'tpr': tpr,
+      'auc': auc_value,
+      'p_null_mean': p_null.mean(),
+      'p_alt_mean': p_alt.mean()
+  }
+
+  plt.plot(fpr, tpr, linewidth=2, label=f'σ = {sigma} (AUC = {auc_value:.3f})') #(AUC = {auc_value:.3f})
+
+  #storing sign=ma, auc, p_null_mean, p_alt_mean
+  summary_results.append({
+    "sigma": sigma,
+    "auc": auc_value,
+    "p_null_mean": p_null.mean(),
+    "p_alt_mean": p_alt.mean(),
+  })
+
+  # storing the roc results
+  for thr, fp, tp in zip(thresholds, fpr, tpr):
+    roc_results.append({
+        "sigma": sigma,
+        "threshold": thr,
+        "fpr": fp,
+        "tpr": tp,
+    })
+
+  # storing trial results
+  trial_results.append({
+        "sigma": sigma,
+        "trial": trial,
+        "p_null": p0,
+        "p_alt": p1,
+    })
+plt.plot([0, 1], [0, 1], 'k--', linewidth=1, label='Random Classifier (AUC = 0.50)')
+
+# Formatting
+plt.xlabel("False Positive Rate (Type I Error)", fontsize=12)
+plt.ylabel("True Positive Rate (Power)", fontsize=12)
+plt.title(f"ROC Curves - pKSD Bootstrap Test\nn={n}, shift=1.0, num_boot={num_boot}", fontsize=14)
+plt.legend(loc='lower right', fontsize=9)
+plt.grid(True, alpha=0.3)
+plt.xlim([0, 1])
+plt.ylim([0, 1])
+plt.tight_layout()
+plt.savefig('roc_curve_pksd.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+
+summary_df = pd.DataFrame(summary_results)
+roc_df = pd.DataFrame(roc_results)
+trial_df = pd.DataFrame(trial_results)
+
+summary_df.to_csv("pksd_summary.csv", index=False)
+roc_df.to_csv("pksd_roc.csv", index=False)
+trial_df.to_csv("pksd_trial.csv", index=False)
