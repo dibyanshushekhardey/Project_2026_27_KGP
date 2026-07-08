@@ -26,3 +26,8 @@ Run the following for executing the pksd_experiment_power_weights.py file.
 ```bash
 !python pksd_experiment_power_weights.py
 ```
+
+Papers that were used to produce the results:
+Using Using Perturbation to Improve Goodness-of-Fit Tests based on Kernelized Stein Discrepancy - Xing Liu, Andrew B. Duncan, Axel Gandy - https://arxiv.org/abs/2304.14762 Official Code - https://github.com/XingLLiu/pksd
+
+A Kernelized Stein Discrepancy for Goodness-of-fit Tests and Model Evaluation - Qiang Liu, Jason D. Lee, Michael I. Jordan - https://arxiv.org/abs/1602.03253
