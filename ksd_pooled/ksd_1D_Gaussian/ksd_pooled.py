@@ -6,7 +6,7 @@ from torch.distributions import Categorical
 from tqdm import trange
 import pandas as pd
 
-from functions import median_heuristic
+from ksd_pooled.ksd_1D_Gaussian.functions import median_heuristic
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
