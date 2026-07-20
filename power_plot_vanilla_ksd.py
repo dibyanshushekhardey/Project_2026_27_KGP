@@ -10,7 +10,7 @@ import numpy as np
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 from ksd_pooled.ksd_1D_Gaussian.ksd_vanilla import KSDTest
-from ksd_pooled.ksd_1D_Gaussian.functions import median_heuristic, sample_gmm
+from ksd_pooled.ksd_1D_Gaussian.functions import sample_gmm
 
 #@title Power Plot Unperturbed KSD
 sigma = 1
