@@ -78,7 +78,7 @@ for weight in weight_list:
     # # p_values_ksd.append(p_value.item())
     # rejections.append(reject.item())
 
-  rejection_rates_pooled_ksd.append(np.mean(rejections))
+  # rejection_rates_pooled_ksd.append(np.mean(rejections))
 
 plt.figure(figsize=(6,4))
 plt.plot(weight_list,rejection_rates_ksd,marker='x',linewidth=2,label='Vanilla KSD')
