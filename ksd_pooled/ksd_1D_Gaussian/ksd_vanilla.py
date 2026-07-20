@@ -6,11 +6,6 @@ from torch.distributions import Categorical
 from tqdm import trange
 import pandas as pd
 
-import sys
-from pathlib import Path
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(PROJECT_ROOT))
 
 from ksd_pooled.ksd_1D_Gaussian.functions import median_heuristic
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
