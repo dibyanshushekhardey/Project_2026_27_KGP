@@ -46,14 +46,18 @@ for weight in weight_list:
   for trial in range(n_trials):
     # Sample distribution p (ratio_s = 1.0)
     x_ksd = sample_gmm(n=n,means=[0, delta],sigmas=[sigma, sigma], weights=[weight, 1 - weight],device=device,) #all samples from left mode
-    U = pksd.pooled_ksd(sigma_list, x_ksd)
-    total, pooled_ksd = pksd.pooled_ksd(U, n)
-    boot_stats = torch.stack([pksd.bootstrap_stat(U) for _ in range(num_boot)])
-    count = torch.count_nonzero(boot_stats >= pooled_ksd)
-    # p_value = (count + 1).float() / (boot_stats.numel() + 1)
-    critical_val = torch.quantile(boot_stats, 1 - alpha)
-    reject = (pooled_ksd > critical_val).int()
+    reject, _, _, _ = pksd.pooled_test(x_ksd=x_ksd,sigma_list=sigma_list,alpha=alpha,num_boot=num_boot,)
     rejections.append(reject.item())
+
+  rejection_rates_pooled_ksd.append(np.mean(rejections))
+    # U = pksd.pooled_ksd(sigma_list, x_ksd)
+    # total, pooled_ksd = pksd.pooled_ksd(U, n)
+    # boot_stats = torch.stack([pksd.bootstrap_stat(U) for _ in range(num_boot)])
+    # count = torch.count_nonzero(boot_stats >= pooled_ksd)
+    # # p_value = (count + 1).float() / (boot_stats.numel() + 1)
+    # critical_val = torch.quantile(boot_stats, 1 - alpha)
+    # reject = (pooled_ksd > critical_val).int()
+    # rejections.append(reject.item())
     # U = 0
     # for sigma_l in sigma_list:
     #   epsilon = torch.randn_like(x_ksd)
