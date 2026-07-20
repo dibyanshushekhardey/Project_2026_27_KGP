@@ -78,20 +78,27 @@ class PooledKSD:
     reject = (ksd > critical_val).int()
     return reject
   
-  def pooled_u_stat(self, sigma_list, x_ksd):
-    U = 0
+  def pooled_test(self, x_ksd, sigma_list, alpha=0.05, num_boot=300):
+    n = x_ksd.shape[0]
+    U = torch.zeros((n, n), device=x_ksd.device)
     for sigma_l in sigma_list:
-      epsilon = torch.randn_like(x_ksd)
-      x_i_tilde = x_ksd + sigma_l * epsilon
-      x1 = x_i_tilde[:, None, :]
-      x2 = x_i_tilde[None, :, :]
-      scale = median_heuristic(x_ksd) # Currently I am passing unperturbed sample, should it be perturbed sample?
-      scale = torch.clamp(scale, min=1e-3)
-      u_q_sigma_L = self.u_q(x1,x2,scale,sigma_l)
-      U += u_q_sigma_L
-    return U
-  
-  def pooled_ksd(self, U, n):
+        epsilon = torch.randn_like(x_ksd)
+        x_i_tilde = x_ksd + sigma_l * epsilon
+
+        x1 = x_i_tilde[:, None, :]
+        x2 = x_i_tilde[None, :, :]
+
+        scale = median_heuristic(x_ksd)
+        scale = torch.clamp(scale, min=1e-3)
+
+        U += self.u_q(x1, x2, scale, sigma_l)
+
     total = U.sum() - torch.diagonal(U).sum()
-    pooled_ksd = total/(n*(n-1))
-    return total, pooled_ksd
+    ksd = total / (n * (n - 1))
+
+    boot_stats = torch.stack([self.bootstrap_stat(U) for _ in range(num_boot)])
+
+    critical_val = torch.quantile(boot_stats, 1 - alpha)
+    reject = (ksd > critical_val).int()
+
+    return reject, ksd, critical_val, boot_stats
