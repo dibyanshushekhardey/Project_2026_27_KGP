@@ -13,20 +13,18 @@ Go to the directory
 ```bash
 %cd /content/Project_2026_27_KGP
 ```
-find_modes.py uses the following package, install using the following
+Run the following command. This commands runs the script .py file in the folders to test the power of the tets statistic compared with pooled and vanilla ksd for different values of delta
+
 ```bash
-!pip install pytorch-minimize
-```
-Run the following for executing the pksd_experiment_power.py file.
-```bash
-!python pksd_experiment_power.py
+!python -m experiments.power_plots_pooled_ksd.power_plot_vanilla_pooled_ksd
 ```
 
-Run the following for executing the pksd_experiment_power_weights.py file.
+Run the following command. This commands runs the script .py file in the folders to test the power of the tets statistic compared with pooled and vanilla ksd for different values of weights for a fixed delta.
 ```bash
-!python pksd_experiment_power_weights.py
+!python -m experiments.power_plots_pooled_ksd.power_weights_compare
 ```
 
+Also run the 
 Papers that were used to produce the results:
 Using Using Perturbation to Improve Goodness-of-Fit Tests based on Kernelized Stein Discrepancy - Xing Liu, Andrew B. Duncan, Axel Gandy - https://arxiv.org/abs/2304.14762 Official Code - https://github.com/XingLLiu/pksd
 
